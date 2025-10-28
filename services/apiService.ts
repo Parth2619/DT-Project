@@ -1,7 +1,29 @@
 import { LostFoundPost, PostType, PostStatus, Claim } from '../types';
 import { mockPosts, mockClaims } from './mockData';
 
-let posts: LostFoundPost[] = [...mockPosts];
+// Load posts from localStorage or use mock data
+const loadPosts = (): LostFoundPost[] => {
+  try {
+    const stored = localStorage.getItem('lostFoundPosts');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load posts from localStorage', error);
+  }
+  return [...mockPosts];
+};
+
+// Save posts to localStorage
+const savePosts = (posts: LostFoundPost[]) => {
+  try {
+    localStorage.setItem('lostFoundPosts', JSON.stringify(posts));
+  } catch (error) {
+    console.error('Failed to save posts to localStorage', error);
+  }
+};
+
+let posts: LostFoundPost[] = loadPosts();
 
 const SIMULATED_DELAY = 500; // in ms
 
@@ -44,6 +66,7 @@ export const createPost = (postData: Omit<LostFoundPost, 'id' | 'createdAt' | 's
         posterUid: postData.posterEmail || 'unknown',
       };
       posts = [newPost, ...posts];
+      savePosts(posts); // Save to localStorage
       resolve(newPost);
     }, SIMULATED_DELAY);
   });
@@ -71,6 +94,7 @@ export const submitClaim = (postId: string, description: string, claimerEmail: s
           posts[postIndex].claims = [];
         }
         posts[postIndex].claims!.push(newClaim);
+        savePosts(posts); // Save to localStorage
       }
       
       console.log("New claim submitted:", newClaim);
@@ -91,6 +115,7 @@ export const acceptClaim = (postId: string, claimId: string): Promise<LostFoundP
         }
         // Update post status to Claimed
         posts[postIndex].status = PostStatus.Claimed;
+        savePosts(posts); // Save to localStorage
         resolve(posts[postIndex]);
       } else {
         reject(new Error("Post not found"));
