@@ -1,0 +1,5 @@
+{
+  "name": "Lost & Found + Notes Portal",
+  "description": "A modern web application to report lost items, find found items, and share academic notes. It features an intuitive interface for users and a comprehensive dashboard for administrators.",
+  "requestFramePermissions": []
+}
