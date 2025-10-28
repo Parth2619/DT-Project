@@ -72,38 +72,23 @@ const Signin = () => {
     }
     setIsSubmitting(true);
     
-    // --- Temporary Admin Login ---
-    // In a real app, this would be a fetch call to your auth endpoint.
-    // TODO: hook up to your auth endpoint (POST /api/auth/signin)
-    // and implement proper CSRF and secure cookie handling.
-    /*
-    try {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
-      }
-      login({ email: data.email, role: data.role });
-      navigate('/');
-    } catch (error) {
-      setServerError(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-    */
+    // Demo users for presentation
+    const demoUsers = [
+      { email: 'user1@demo.com', password: 'demo123', role: 'user', name: 'Alice Johnson' },
+      { email: 'user2@demo.com', password: 'demo123', role: 'user', name: 'Bob Smith' }
+    ];
     
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-    if (email === 'admin@example.com' && password === 'admin123') {
-        login({ email, role: 'admin' });
-        navigate('/');
+    
+    const foundUser = demoUsers.find(u => u.email === email && u.password === password);
+    
+    if (foundUser) {
+      login({ email: foundUser.email, role: foundUser.role, name: foundUser.name });
+      navigate('/');
     } else {
-        setServerError('Invalid email or password.');
+      setServerError('Invalid email or password. Try: user1@demo.com or user2@demo.com (password: demo123)');
     }
-    // --- End Temporary Admin Login ---
+    
     setIsSubmitting(false);
   };
   
@@ -124,6 +109,23 @@ const Signin = () => {
             {serverError}
           </div>
         )}
+
+        {/* Demo Users Info Box */}
+        <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mb-6">
+          <h3 className="text-blue-300 font-semibold mb-2 text-sm">🎭 Demo Accounts</h3>
+          <div className="space-y-2 text-xs text-blue-200">
+            <div>
+              <p className="font-medium">User 1 (Alice):</p>
+              <p className="text-blue-300">📧 user1@demo.com</p>
+              <p className="text-blue-300">🔑 demo123</p>
+            </div>
+            <div>
+              <p className="font-medium">User 2 (Bob):</p>
+              <p className="text-blue-300">📧 user2@demo.com</p>
+              <p className="text-blue-300">🔑 demo123</p>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">

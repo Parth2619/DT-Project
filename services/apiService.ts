@@ -49,20 +49,52 @@ export const createPost = (postData: Omit<LostFoundPost, 'id' | 'createdAt' | 's
   });
 };
 
-export const submitClaim = (postId: string, description: string): Promise<Claim> => {
+export const submitClaim = (postId: string, description: string, claimerEmail: string, claimerName: string): Promise<Claim> => {
   return new Promise(resolve => {
     setTimeout(() => {
       const newClaim: Claim = {
         id: `claim-${Date.now()}`,
         postId,
         claimerDescription: description,
-        claimerUid: 'current-user-mock-id', // Mocked user ID
+        claimerUid: claimerEmail,
+        claimerEmail: claimerEmail,
+        claimerName: claimerName,
         adminDecision: 'pending',
         createdAt: new Date().toISOString(),
       };
       mockClaims.push(newClaim);
+      
+      // Update the post with the claim
+      const postIndex = posts.findIndex(p => p.id === postId);
+      if (postIndex > -1) {
+        if (!posts[postIndex].claims) {
+          posts[postIndex].claims = [];
+        }
+        posts[postIndex].claims!.push(newClaim);
+      }
+      
       console.log("New claim submitted:", newClaim);
       resolve(newClaim);
+    }, SIMULATED_DELAY);
+  });
+};
+
+export const acceptClaim = (postId: string, claimId: string): Promise<LostFoundPost> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const postIndex = posts.findIndex(p => p.id === postId);
+      if (postIndex > -1) {
+        // Update claim status
+        const claim = posts[postIndex].claims?.find(c => c.id === claimId);
+        if (claim) {
+          claim.adminDecision = 'accepted';
+        }
+        // Update post status to Claimed
+        posts[postIndex].status = PostStatus.Claimed;
+        resolve(posts[postIndex]);
+      } else {
+        reject(new Error("Post not found"));
+      }
     }, SIMULATED_DELAY);
   });
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../hooks/useAuth';
 import { submitClaim } from '../services/apiService';
 import Spinner from './Spinner';
 
@@ -12,6 +13,7 @@ const ClaimForm: React.FC<ClaimFormProps> = ({ postId, onClaimSubmitted }) => {
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addToast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,10 +22,15 @@ const ClaimForm: React.FC<ClaimFormProps> = ({ postId, onClaimSubmitted }) => {
       return;
     }
 
+    if (!user) {
+      addToast('You must be logged in to claim an item.', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await submitClaim(postId, description);
-      addToast('Claim submitted successfully! You will be notified of the outcome.', 'success');
+      await submitClaim(postId, description, user.email, user.name || user.email);
+      addToast('Claim submitted successfully! The poster will review your claim.', 'success');
       onClaimSubmitted();
     } catch (error) {
       addToast('Failed to submit claim. Please try again.', 'error');

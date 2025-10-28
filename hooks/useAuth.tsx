@@ -4,6 +4,7 @@ import { UserIcon } from '../constants';
 interface AuthUser {
   email: string;
   role: 'admin' | 'user';
+  name?: string;
 }
 
 interface AuthContextType {

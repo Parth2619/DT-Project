@@ -3,6 +3,7 @@ import { PostType, LostFoundPost } from '../types';
 import { createPost } from '../services/apiService';
 import { generateDescription } from '../services/geminiService';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../hooks/useAuth';
 import FileUploader from './FileUploader';
 import Spinner from './Spinner';
 import { SparklesIcon } from '../constants';
@@ -21,6 +22,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const { addToast } = useToast();
+    const { user } = useAuth();
 
     const handleGenerateDescription = async () => {
         if (!title) {
@@ -46,6 +48,11 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
             return;
         }
 
+        if (!user) {
+            addToast("You must be logged in to post.", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const postData: Omit<LostFoundPost, 'id' | 'createdAt' | 'status' | 'posterUid'> = {
@@ -54,7 +61,9 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
                 location,
                 date: new Date(date).toISOString(),
                 type,
-                imageUrl: imagePreview, // In a real app, this would be a URL from storage
+                imageUrl: imagePreview,
+                posterEmail: user.email,
+                posterName: user.name || user.email,
             };
             await createPost(postData as Omit<LostFoundPost, 'id' | 'createdAt' | 'status'>);
             addToast("Post created successfully!", "success");

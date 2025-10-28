@@ -29,7 +29,10 @@ export interface LostFoundPost {
   details: string;
   status: PostStatus;
   posterUid: string;
+  posterEmail?: string;
+  posterName?: string;
   createdAt: string; // ISO string
+  claims?: Claim[];
 }
 
 export type ToastMessage = {
@@ -41,7 +44,9 @@ export type ToastMessage = {
 export interface Claim {
   id: string;
   postId: string;
-  claimerUid: string; // For now, will be mocked
+  claimerUid: string;
+  claimerEmail: string;
+  claimerName: string;
   claimerDescription: string;
   adminDecision: 'pending' | 'accepted' | 'rejected';
   adminReason?: string;

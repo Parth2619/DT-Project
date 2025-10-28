@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { LostFoundPost, PostType, PostStatus } from '../types';
-import { fetchPost } from '../services/apiService';
+import { fetchPost, acceptClaim } from '../services/apiService';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import ClaimForm from '../components/ClaimForm';
@@ -12,30 +14,45 @@ const ItemDetailPage = () => {
   const [post, setPost] = useState<LostFoundPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
+  const loadPost = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const fetchedPost = await fetchPost(id);
+      if (fetchedPost) {
+        setPost(fetchedPost);
+      }
+    } catch (error) {
+      console.error("Failed to fetch post", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const getPost = async () => {
-      if (!id) return;
-      setLoading(true);
-      try {
-        const fetchedPost = await fetchPost(id);
-        if (fetchedPost) {
-          setPost(fetchedPost);
-        } else {
-          // Handle post not found
-        }
-      } catch (error) {
-        console.error("Failed to fetch post", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getPost();
+    loadPost();
   }, [id]);
   
   const handleClaimSubmitted = () => {
     setIsClaimModalOpen(false);
+    loadPost(); // Reload to show the new claim
   };
+
+  const handleAcceptClaim = async (claimId: string) => {
+    if (!id) return;
+    try {
+      await acceptClaim(id, claimId);
+      addToast('Claim accepted! Item marked as claimed.', 'success');
+      loadPost(); // Reload to show updated status
+    } catch (error) {
+      addToast('Failed to accept claim.', 'error');
+    }
+  };
+
+  const isPostOwner = user && post && post.posterEmail === user.email;
 
   if (loading) {
     return <div className="flex justify-center items-center h-96"><Spinner /></div>;
@@ -86,8 +103,55 @@ const ItemDetailPage = () => {
               <h2 className="text-xl font-semibold text-light-text dark:text-white mb-2">Details</h2>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{post.details}</p>
             </div>
+
+            {/* Claims Section - Only visible to post owner */}
+            {isPostOwner && post.claims && post.claims.length > 0 && (
+              <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h2 className="text-xl font-semibold text-light-text dark:text-white mb-4">
+                  📝 Claims ({post.claims.length})
+                </h2>
+                <div className="space-y-4">
+                  {post.claims.map((claim) => (
+                    <div key={claim.id} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white">{claim.claimerName}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{claim.claimerEmail}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            {new Date(claim.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          claim.adminDecision === 'accepted' ? 'bg-green-500/20 text-green-700 dark:text-green-300' :
+                          claim.adminDecision === 'rejected' ? 'bg-red-500/20 text-red-700 dark:text-red-300' :
+                          'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300'
+                        }`}>
+                          {claim.adminDecision}
+                        </span>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">Proof of Ownership:</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-3">
+                          {claim.claimerDescription}
+                        </p>
+                      </div>
+                      {claim.adminDecision === 'pending' && post.status !== PostStatus.Claimed && (
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            onClick={() => handleAcceptClaim(claim.id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                          >
+                            ✓ Accept & Return Item
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
-            {post.type === PostType.Found && post.status === PostStatus.Pending && (
+            {post.type === PostType.Found && post.status === PostStatus.Pending && !isPostOwner && (
               <div className="mt-10 text-center">
                 <button 
                   onClick={() => setIsClaimModalOpen(true)}
