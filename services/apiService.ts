@@ -40,8 +40,8 @@ export const createPost = (postData: Omit<LostFoundPost, 'id' | 'createdAt' | 's
         ...postData,
         id: String(Date.now()),
         createdAt: new Date().toISOString(),
-        status: PostStatus.Pending, // In a real app, 'found' items might need admin approval
-        posterUid: 'current-user-mock-id' // Mocked user ID
+        status: PostStatus.Pending,
+        posterUid: postData.posterEmail || 'unknown',
       };
       posts = [newPost, ...posts];
       resolve(newPost);
